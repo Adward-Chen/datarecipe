@@ -23,3 +23,14 @@ The `chat()` function allows you to pass in a small dataset and a user question.
 #### Return Values
 - ChatGPT-4 response (Type: String)
 - question cost, in dollars (Type: Number).
+
+#### Example
+# Initialize your question
+user_question = "What is the average value in Column1?"
+
+# Call the chat() function
+response, cost = datarecipe.chat(df=df, question=user_question, key=your_api_key)
+
+# Output the response
+print(response)
+print(cost)
