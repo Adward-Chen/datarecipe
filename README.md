@@ -1,2 +1,2 @@
 # databaker
-A recipe for every databaker
+A recipe for every data baker
