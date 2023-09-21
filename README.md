@@ -21,7 +21,7 @@ The `chat()` function allows you to pass in a small dataset and a user question.
 - `daily_cost_limit`: Single-day question spending limit, default is 10 (Type: Number).
 
 #### Return Values
-- ChatGPT-4 response (Type: String)
+- ChatGPT response (Type: String)
 - question cost, in dollars (Type: Number).
 
 #### Example
