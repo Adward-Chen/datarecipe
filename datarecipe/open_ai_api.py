@@ -23,7 +23,7 @@ def save_yaml(data, file_name="question_records.yaml"):
     with open(file_name, "w") as file:
         yaml.dump(data, file)
 
-def chat(df, question, key, yaml_name="question_records.yaml", system='You are a data scientist', cost = True, daily_cost_limit=10):
+def chat(df, question, key, yaml_name="question_records.yaml", system='You are a data scientist assistant', cost = True, daily_cost_limit=10):
   # constraint dataframe size and cost
   records_yaml = load_yaml(file_name=yaml_name)
   current_cost = sum(record['cost'] for record in records_yaml if record['date'] == date.today())
@@ -44,13 +44,13 @@ def chat(df, question, key, yaml_name="question_records.yaml", system='You are a
         {"role": "assistant", "content": user_assistant[i]} if i % 2 else {"role": "user", "content": user_assistant[i]}
         for i in range(len(user_assistant))]
     msgs = system_msg + user_assistant_msgs
-    response = openai.ChatCompletion.create(model="gpt-4",
+    response = openai.ChatCompletion.create(model="gpt-3.5-turbo",
                                             messages=msgs,
                                             temperature=0,
                                             max_tokens = 1000)
     status_code = response["choices"][0]["finish_reason"] # type: ignore
     assert status_code == "stop", f"The status code was {status_code}."
-    question_cost = response["usage"]["completion_tokens"]/1000*0.12 + response["usage"]["prompt_tokens"]/1000*0.06 # type: ignore
+    question_cost = response["usage"]["completion_tokens"]/1000*0.004 + response["usage"]["prompt_tokens"]/1000*0.003 # type: ignore
     records_yaml.append({"date":date.today(), "question": question, "cost": question_cost})
     save_yaml(records_yaml, yaml_name)
     if cost:
