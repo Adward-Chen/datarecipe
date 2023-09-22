@@ -36,8 +36,7 @@ response, cost = datarecipe.chat(df=df, question=user_question, key=your_api_key
 print(response)
 print(cost)
 ```
-
-
+---
 ### send_email()
 
 #### Purpose
