@@ -37,6 +37,7 @@ print(response)
 print(cost)
 ```
 
+
 ### send_email()
 
 #### Purpose
