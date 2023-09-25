@@ -44,17 +44,16 @@ print(cost)
 ### send_email()
 
 #### Purpose
-The `chat()` function allows you to pass in a small dataset and a user question. It then returns an answer from ChatGPT-4 based on the data and the cost of generating this answer. Additionally, the function creates a YAML file in the working directory, recording the date of the query, the question, and the cost.
 The `send_email()` function can be used in scripts to send emails to specified addresses for various purposes such as exception reminders or periodic script reports.
 
 #### Parameters
-- `subject`: Your e-mail subject (Type: str).
-- `body`: Your e-mail content (Type: str).
-- `send_email_address`: E-mail address of the sender (Type: str).
-- `send_email_password`: E-mail password of the sender (Type: str).
-- `receive_email_address`: E-mail address of the receiver (Type: str).
-- `smtp_address`: SMTP address of sender's e-mail (Type: str).
-- `smtp_port`: SMTP port of sender's e-mail (Type: int).
+- `subject`: Your e-mail subject (Type: String).
+- `body`: Your e-mail content (Type: String).
+- `send_email_address`: E-mail address of the sender (Type: String).
+- `send_email_password`: E-mail password of the sender (Type: String).
+- `receive_email_address`: E-mail address of the receiver (Type: String).
+- `smtp_address`: SMTP address of sender's e-mail (Type: String).
+- `smtp_port`: SMTP port of sender's e-mail (Type: Int).
 
 #### Return Values
 - None
@@ -67,5 +66,49 @@ datarecipe.send_email(
     send_emial_address='sender_emial_address', 
     send_emial_password='sender_emial_password',
     receive_email_address='your_email_address'
+)
+```
+---
+### update_data()
+
+#### Purpose
+The `update_data()` function allows for both overwriting and incremental updates of data within the MySQL database.
+
+#### Parameters
+- `raw_df`: Dataframe added to database (Type: DataFrame).
+- `yaml_file_name`: Yaml file containing database information (Type: String).
+- `database`: The name of database set in yaml file (Type: String).
+- `table`: Updated table (Type: String).
+- `add_data`: True for incremental update and False for overwriting (Type: Bool).
+- `df_date_col`: Column name of date value for dataframe (Type: String).
+- `db_date_col`: Column name of date value for database table (Type: String).
+- `start_date`: Update date range (Type: String).
+- `end_date`: Update date range (Type: String).
+
+#### Return Values
+- None
+
+#### Example
+
+```yaml
+database_1:
+  user: your_database_user
+  password: your_database_password
+  host: your_database_host
+  database: your_database_name
+  port: 3306
+```
+
+```python
+datarecipe.update_data(
+    raw_df=df,
+    yaml_file_name="cfg.yaml",
+    database="database_1",
+    table="updated_table_in_database",
+    add_data=False, 
+    df_date_col='date', 
+    db_date_col='date', 
+    start_date='2023-01-01', 
+    end_date='2023-04-01'
 )
 ```
