@@ -90,6 +90,7 @@ The `update_data()` function allows for both overwriting and incremental updates
 
 #### Example
 
+Example of yaml_file:
 ```yaml
 database_1:
   user: your_database_user
@@ -99,6 +100,7 @@ database_1:
   port: 3306
 ```
 
+Example of function:
 ```python
 datarecipe.update_data(
     raw_df=df,
