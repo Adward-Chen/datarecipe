@@ -82,8 +82,6 @@ The `update_data()` function allows for both overwriting and incremental updates
 - `add_data`: True for incremental update and False for overwriting (Type: Bool).
 - `df_date_col`: Column name of date value for dataframe (Type: String).
 - `db_date_col`: Column name of date value for database table (Type: String).
-- `start_date`: Update date range (Type: String).
-- `end_date`: Update date range (Type: String).
 
 #### Return Values
 - None
@@ -109,8 +107,6 @@ datarecipe.update_data(
     table="updated_table_in_database",
     add_data=False, 
     df_date_col='date', 
-    db_date_col='date', 
-    start_date='2023-01-01', 
-    end_date='2023-04-01'
+    db_date_col='date'
 )
 ```
