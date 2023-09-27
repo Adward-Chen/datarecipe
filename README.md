@@ -6,11 +6,11 @@
 
 ## Dependencies
 
-- `sqlalchemy`: <2.0
+- `sqlalchemy`: ==1.4.16
 
 ## Functions
 
-### chat()
+### 1. chat()
 
 #### Purpose
 The `chat()` function allows you to pass in a small dataset and a user question. It then returns an answer from ChatGPT-4 based on the data and the cost of generating this answer. Additionally, the function creates a YAML file in the working directory, recording the date of the query, the question, and the cost.
@@ -41,7 +41,7 @@ print(response)
 print(cost)
 ```
 ---
-### send_email()
+### 2. send_email()
 
 #### Purpose
 The `send_email()` function can be used in scripts to send emails to specified addresses for various purposes such as exception reminders or periodic script reports.
@@ -69,7 +69,7 @@ datarecipe.send_email(
 )
 ```
 ---
-### update_data()
+### 3. update_data()
 
 #### Purpose
 The `update_data()` function allows for both overwriting and incremental updates of data within the MySQL database.
