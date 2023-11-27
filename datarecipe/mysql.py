@@ -1,9 +1,11 @@
 import numpy as np
-# sqlalchemy < 2.0
+# sqlalchemy ==1.4.16
 from sqlalchemy import create_engine
 from typing import Optional
 import yaml
 from datetime import datetime
+from tqdm import tqdm
+import pandas as pd
 
 
 def load_db_config(yaml_file_name, database):
@@ -16,9 +18,13 @@ def connect_to_db(cfg):
                          (cfg['user'], cfg['password'], cfg['host'], cfg['port'], cfg['database']))
 
 def clean_dataframe(df):
-    if np.isinf(df).values.any():
-        df.replace([np.inf, -np.inf], np.nan, inplace=True)
-        print("Warning: DataFrame contains infinite values, they have been changed to NaN.")
+    for col in df.columns:
+        # 检查列是否为数值型
+        if pd.api.types.is_numeric_dtype(df[col]):
+            # 如果是数值型列，检查是否包含无穷值
+            if np.isinf(df[col]).any():
+                df[col].replace([np.inf, -np.inf], np.nan, inplace=True)
+                print(f"Warning: Column '{col}' contains infinite values, they have been changed to NaN.")
 
 def execute_sql(engine, sql_statement):
     with engine.connect() as conn:
@@ -26,9 +32,7 @@ def execute_sql(engine, sql_statement):
 
 def update_data(raw_df, yaml_file_name, database, table, add_data=True, 
                 df_date_col: Optional[str] = None, 
-                db_date_col: Optional[str] = None, 
-                start_date: Optional[str] = None, 
-                end_date: Optional[str] = None):
+                db_date_col: Optional[str] = None):
     try:
         df = raw_df.copy()
         cfg = load_db_config(yaml_file_name, database)
@@ -38,16 +42,25 @@ def update_data(raw_df, yaml_file_name, database, table, add_data=True,
             raise ValueError("Imported dataset is empty.")
         
         clean_dataframe(df)
-        if df_date_col:
-            df = df[(df[df_date_col]>=start_date)&(df[df_date_col]<=end_date)]
+
+        chunk_size = 1000  # 每次上传的数据量
+        num_chunks = (len(df) - 1) // chunk_size + 1
 
         if add_data:
-            df.to_sql(table, engine, if_exists='append', index=False)
+            for i in tqdm(range(num_chunks), desc="Adding Data"):
+                start_idx = i * chunk_size
+                end_idx = start_idx + chunk_size
+                df.iloc[start_idx:end_idx].to_sql(table, engine, if_exists='append', index=False)
             print_action_result(table, "added", df, df_date_col)
-        else :
+        else:
+            start_date= min(df[df_date_col])
+            end_date = max(df[df_date_col])
             delete_sql = f"DELETE FROM {table} WHERE {db_date_col} BETWEEN '{start_date}' AND '{end_date}'"
             execute_sql(engine, delete_sql)
-            df.to_sql(table, engine, if_exists='append', index=False)
+            for i in tqdm(range(num_chunks), desc="Updating Data"):
+                start_idx = i * chunk_size
+                end_idx = start_idx + chunk_size
+                df.iloc[start_idx:end_idx].to_sql(table, engine, if_exists='append', index=False)
             print_action_result(table, "updated", df, df_date_col)
     except Exception as e:
         raise ValueError(f"{e}")
@@ -59,3 +72,20 @@ def print_action_result(table, action, df, df_date_col):
         print(f"{table} data has been {action}: {current_time}\nData date range: {date_range}")
     else:
         print(f"{table} data has been {action}: {current_time}")
+
+def clear_db(yaml_file_name, database, table):
+    cfg = load_db_config(yaml_file_name, database)
+    engine = connect_to_db(cfg)
+    delete_sql = f"DELETE FROM {table}"
+    execute_sql(engine, delete_sql)
+
+def fetch_table_data(yaml_file_name, database, table, date_col=None, start_date=None, end_date=None):
+    cfg = load_db_config(yaml_file_name, database)
+    engine = connect_to_db(cfg)
+    if date_col:
+        sql = f"SELECT * FROM {table} WHERE {date_col} BETWEEN '{start_date}' AND '{end_date}'"
+        print(sql)
+    else:
+        sql = f"SELECT * FROM {table} "
+    df = pd.read_sql(sql, engine)
+    return df
