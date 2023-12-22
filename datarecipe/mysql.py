@@ -30,7 +30,7 @@ def execute_sql(engine, sql_statement):
     with engine.connect() as conn:
         conn.execute(sql_statement)
 
-def update_data(raw_df, yaml_file_name, database, table, add_data=True, 
+def update_data(raw_df, yaml_file_name, database, table, add_data = False, 
                 df_date_col: Optional[str] = None, 
                 db_date_col: Optional[str] = None):
     try:
@@ -84,8 +84,17 @@ def fetch_table_data(yaml_file_name, database, table, date_col=None, start_date=
     engine = connect_to_db(cfg)
     if date_col:
         sql = f"SELECT * FROM {table} WHERE {date_col} BETWEEN '{start_date}' AND '{end_date}'"
-        print(sql)
     else:
         sql = f"SELECT * FROM {table} "
     df = pd.read_sql(sql, engine)
     return df
+
+def sql_query(yaml_file_name, database, sql):
+    cfg = load_db_config(yaml_file_name, database)
+    engine = connect_to_db(cfg)
+    sql = sql
+    df = pd.read_sql(sql, engine)
+    if len(df) > 0:
+        return df
+    else:
+        print('Finsh and no return.')
