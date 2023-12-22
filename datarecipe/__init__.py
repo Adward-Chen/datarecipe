@@ -16,7 +16,8 @@ from .common_tools import(
 from .mysql import(
     update_data,
     clear_db,
-    fetch_table_data
+    fetch_table_data,
+    sql_query
 )
 
 from .examine import(
