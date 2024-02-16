@@ -1,0 +1,11 @@
+LICENSE.txt
+README.md
+setup.py
+datarecipe/__init__.py
+datarecipe/common_tools.py
+datarecipe/examine.py
+datarecipe/mysql.py
+datarecipe.egg-info/PKG-INFO
+datarecipe.egg-info/SOURCES.txt
+datarecipe.egg-info/dependency_links.txt
+datarecipe.egg-info/top_level.txt
