@@ -10,38 +10,7 @@
 
 ## Functions
 
-### 1. chat()
-
-#### Purpose
-The `chat()` function allows you to pass in a small dataset and a user question. It then returns an answer from ChatGPT-4 based on the data and the cost of generating this answer. Additionally, the function creates a YAML file in the working directory, recording the date of the query, the question, and the cost.
-
-#### Parameters
-- `df`: The small dataset you want to analyze (Type: DataFrame).
-- `question`: The question we want answered (Type: String).
-- `key`: Your ChatGPT API key (Type: String).
-- `yaml_name`: The file name of the yaml file (Type: String).
-- `system`: The messages describe the behavior of the AI assistant (Type: String).
-- `cost`: Whether to return the problem cost, True returns the problem cost, False returns the problem token number, default is True. (True/False).
-- `daily_cost_limit`: Single-day question spending limit, default is 10 (Type: Number).
-
-#### Return Values
-- ChatGPT response (Type: String)
-- question cost, in dollars (Type: Number).
-
-#### Example
-```python
-# Initialize your question
-user_question = "What is the average value in Column1?"
-
-# Call the chat() function
-response, cost = datarecipe.chat(df=df, question=user_question, key=your_api_key)
-
-# Output the response and cost
-print(response)
-print(cost)
-```
----
-### 2. send_email()
+### 1. send_email()
 
 #### Purpose
 The `send_email()` function can be used in scripts to send emails to specified addresses for various purposes such as exception reminders or periodic script reports.
@@ -69,7 +38,7 @@ datarecipe.send_email(
 )
 ```
 ---
-### 3. update_data()
+### 2. update_data()
 
 #### Purpose
 The `update_data()` function allows for both overwriting and incremental updates of data within the MySQL database.
@@ -82,6 +51,7 @@ The `update_data()` function allows for both overwriting and incremental updates
 - `add_data`: True for incremental update and False for overwriting (Type: Bool).
 - `df_date_col`: Column name of date value for dataframe (Type: String).
 - `db_date_col`: Column name of date value for database table (Type: String).
+- `custom_path`: None for working directory or specific cfg file directory (Type: String).
 
 #### Return Values
 - None
@@ -107,6 +77,139 @@ datarecipe.update_data(
     table="updated_table_in_database",
     add_data=False, 
     df_date_col='date', 
-    db_date_col='date'
+    db_date_col='date',
+    custom_path=r"C:\Users\Administrator"
 )
 ```
+---
+### 3. local_to_df()
+
+#### Purpose
+Read local csv or excel files, support automatic encoding type recognition and files combination.
+
+#### Return Values
+- Dataframe
+
+#### Example
+```python
+df = datarecipe.local_to_df(
+    path = "absolute or relative path to the files directory",
+    partial_file_name = "part of files' name",
+    skip_rows = 0,
+    keep_file_name = False,
+    sheet_num = 1,
+    encoding = 'auto',
+    sep=','
+)
+```
+---
+### 4. df_to_xlsx()
+
+#### Purpose
+Export df to excel file
+
+#### Return Values
+- None
+
+#### Example
+```python
+datarecipe.df_to_xlsx(
+    df,
+    directory_path = "directory to save df",
+    file_name = "excel file name"
+)
+```
+---
+### 5. df_to_csv()
+
+#### Purpose
+Export df to csv file
+
+#### Return Values
+- None
+  
+#### Example
+```python
+datarecipe.df_to_csv(
+    df,
+    directory_path = "directory to save df",
+    file_name = "csv file name"
+)
+```
+---
+### 6. check_empty()
+
+#### Purpose
+Check whether there are space string, None or np.nan value in df, return data summary and visualization of these missing value.
+
+#### Return Values
+- Missing Value found: missing value df
+- No missing Value found: text printed
+  
+#### Example
+```python
+missing_df = datarecipe.check_empty(
+    df,
+    columns = "List of specific columns to check or None for all columns",
+    output_cols = "List of specific columns or None for all columns"
+    )
+```
+---
+### 7. clear_db()
+
+#### Purpose
+Clear data from a table in MySQL database
+
+#### Return Values
+- None
+  
+#### Example
+```python
+datarecipe.clear_db(
+    yaml_file_name = "cfg.yaml",
+    database = "database name",
+    table = "table name",
+    custom_path= "None for working directory or specific cfg file directory"
+)
+```
+---
+### 8. fetch_table_data()
+
+#### Purpose
+Load table in MySQL database into Dataframe. Same as SQL "Select * from table".
+
+#### Return Values
+- Dataframe
+  
+#### Example
+```python
+datarecipe.clear_db( 
+    yaml_file_name = "cfg.yaml",
+    database = "database name",
+    table = "table name",
+    date_col = "None or date column name in table",
+    start_date = "None or start date of data",
+    end_date =  "None or end date of data", 
+    custom_path= "None for working directory or specific cfg file directory"
+)
+```
+---
+### 9. sql_query()
+
+#### Purpose
+Run sql in python, support addition, deletion, modification and query.
+
+#### Return Values
+- DataFrame
+- None
+
+#### Example
+```python
+datarecipe.sql_query(yaml_file_name, database, sql, custom_path=None
+    yaml_file_name = "cfg.yaml",
+    database = "database name",
+    sql = "Select * from table_name"
+    custom_path= "None for working directory or specific cfg file directory"
+)
+```
+---
