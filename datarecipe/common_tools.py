@@ -6,21 +6,24 @@ import os
 from tqdm import tqdm
 import chardet
 
-def send_email(subject: str, body: str, send_emial_address:str, send_emial_password:str, receive_email_address: str, smtp_address:str='smtp.feishu.cn', smtp_port:int=465):
+def send_email(subject: str, body: str, send_email_address:str, send_email_password:str, receive_email_address: str, smtp_address:str='smtp.feishu.cn', smtp_port:int=465, type='SSL'):
     # For SMTP, the email and password
-    PASSWORD = send_emial_password  # Password
-
     msg = MIMEText(body)
-    msg['From'] = send_emial_address
+    msg['From'] = send_email_address
     msg['To'] = receive_email_address
     msg['Subject'] = subject
+    if type=='SSL':
+        # Connect to SMTP server and send email
+        with smtplib.SMTP_SSL(smtp_address, smtp_port) as server:  # Using SMTP_SSL to connect
+            server.login(send_email_address, send_email_password)
+            server.sendmail(send_email_address, receive_email_address, msg.as_string())
+    elif type=='TLS':
+        with smtplib.SMTP(smtp_address, smtp_port) as server:
+            server.starttls()  # 升级连接到TLS
+            server.login(send_email_address, send_email_password)
+            server.sendmail(send_email_address, receive_email_address, msg.as_string())
 
-    # Connect to SMTP server and send email
-    with smtplib.SMTP_SSL(smtp_address, smtp_port) as server:  # Using SMTP_SSL to connect
-        server.login(send_emial_address, PASSWORD)
-        server.sendmail(send_emial_address, receive_email_address, msg.as_string())
-
-def local_to_df(path, partial_file_name, skip_rows = None, keep_file_name=False, sheet_num=1):
+def local_to_df(path, partial_file_name, skip_rows=0, keep_file_name=False, sheet_num=1, encoding='auto', sep=','):
     all_data = pd.DataFrame()
 
     # 获取匹配的文件列表，并为其添加进度条
@@ -31,17 +34,15 @@ def local_to_df(path, partial_file_name, skip_rows = None, keep_file_name=False,
         file_extension = file_extension[1:]  # remove the leading dot
         
         # 识别文件编码类型
-        with open(file_name, 'rb') as file:
-            result = chardet.detect(file.read())
-            encoding = result['encoding']
+        if encoding=='auto':
+            with open(file_name, 'rb') as file:
+                result = chardet.detect(file.read())
+                encoding = result['encoding']
         
         if file_extension == "csv":
-            if skip_rows:
-                file_data = pd.read_csv(file_name, encoding=encoding, skiprows=skip_rows)
-            else:
-                file_data = pd.read_csv(file_name, encoding=encoding)
+            file_data = pd.read_csv(file_name, encoding=encoding, skiprows=skip_rows, sep=sep)
         elif file_extension == "xlsx":
-            file_data = pd.read_excel(file_name, sheet_name=sheet_num - 1)
+            file_data = pd.read_excel(file_name, sheet_name=sheet_num - 1, skiprows=skip_rows)
         else:
             continue  # Skip unsupported file types
 

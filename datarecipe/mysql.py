@@ -7,6 +7,7 @@ from datetime import datetime
 from tqdm import tqdm
 import pandas as pd
 import os
+from sqlalchemy.exc import ResourceClosedError
 
 
 def load_db_config(yaml_file_name, database, custom_path=None):
@@ -61,6 +62,7 @@ def update_data(raw_df, yaml_file_name, database,
         else:
             start_date= min(df[df_date_col])
             end_date = max(df[df_date_col])
+            df.iloc[0:1].to_sql(table, engine, if_exists='append', index=False)
             delete_sql = f"DELETE FROM {table} WHERE {db_date_col} BETWEEN '{start_date}' AND '{end_date}'"
             execute_sql(engine, delete_sql)
             for i in tqdm(range(num_chunks), desc="Updating Data"):
@@ -98,9 +100,15 @@ def fetch_table_data(yaml_file_name, database, table, date_col=None, start_date=
 def sql_query(yaml_file_name, database, sql, custom_path=None):
     cfg = load_db_config(yaml_file_name, database, custom_path)
     engine = connect_to_db(cfg)
-    sql = sql
-    df = pd.read_sql(sql, engine)
-    if len(df) > 0:
-        return df
+    if sql.strip().upper().startswith("SELECT"):
+        # 若为查询语句，执行查询操作并返回DataFrame
+        try:
+            df = pd.read_sql(sql, engine)
+            return df
+        except ResourceClosedError:
+            print('查询完成，但没有返回任何数据。')
     else:
-        print('Finsh and no return.')
+        # 执行非查询操作
+        execute_sql(engine, sql)
+        print('操作完成。')
+            
