@@ -183,7 +183,7 @@ Load table in MySQL database into Dataframe. Same as SQL "Select * from table".
   
 #### Example
 ```python
-datarecipe.clear_db( 
+datarecipe.fetch_table_data( 
     yaml_file_name = "cfg.yaml",
     database = "database name",
     table = "table name",
