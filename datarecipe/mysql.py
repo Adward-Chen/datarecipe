@@ -1,114 +1,148 @@
-import numpy as np
-# sqlalchemy ==1.4.16
-from sqlalchemy import create_engine
-from typing import Optional
-import yaml
-from datetime import datetime
-from tqdm import tqdm
-import pandas as pd
 import os
+import yaml
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+from datetime import datetime
+from typing import Optional
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import URL
 from sqlalchemy.exc import ResourceClosedError
 
-
-def load_db_config(yaml_file_name, database, custom_path=None):
+def load_db_config(yaml_file_name: str, database: str, custom_path: Optional[str] = None) -> dict:
+    """加载数据库配置"""
     file_path = os.path.join(custom_path, yaml_file_name) if custom_path else yaml_file_name
     with open(file_path, 'r') as stream:
         config = yaml.safe_load(stream)
-    return config[database]
+    return config.get(database, {})
 
+def connect_to_db(cfg: dict):
+    """创建数据库连接"""
+    try:
+        url = URL.create(
+            drivername='mysql+mysqldb',
+            username=cfg['user'],
+            password=cfg['password'],
+            host=cfg['host'],
+            port=cfg['port'],
+            database=cfg['database']
+        )
+        engine = create_engine(url)
+        return engine
+    except KeyError as e:
+        raise ValueError(f"配置中缺少必要的键：{e}")
 
-def connect_to_db(cfg):
-    return create_engine(str(r"mysql+mysqldb://%s:" + '%s' + "@%s:%s/%s") % 
-                         (cfg['user'], cfg['password'], cfg['host'], cfg['port'], cfg['database']))
+def clean_dataframe(df: pd.DataFrame):
+    """清理DataFrame中的无穷值"""
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    if len(numeric_cols) > 0:
+        inf_values = df[numeric_cols].isin([np.inf, -np.inf]).any()
+        cols_with_inf = inf_values[inf_values].index.tolist()
+        if cols_with_inf:
+            df.replace([np.inf, -np.inf], np.nan, inplace=True)
+            print(f"警告：以下列包含无穷值，已替换为NaN：{cols_with_inf}")
 
-def clean_dataframe(df):
-    for col in df.columns:
-        # 检查列是否为数值型
-        if pd.api.types.is_numeric_dtype(df[col]):
-            # 如果是数值型列，检查是否包含无穷值
-            if np.isinf(df[col]).any():
-                df[col].replace([np.inf, -np.inf], np.nan, inplace=True)
-                print(f"Warning: Column '{col}' contains infinite values, they have been changed to NaN.")
+def execute_sql(engine, sql_statement: str):
+    """执行SQL语句"""
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(sql_statement))
+    except Exception as e:
+        raise ValueError(f"执行SQL时发生错误：{e}")
 
-def execute_sql(engine, sql_statement):
-    with engine.connect() as conn:
-        conn.execute(sql_statement)
-
-def update_data(raw_df, yaml_file_name, database, 
-                table, 
-                add_data = False, 
-                df_date_col: Optional[str] = None, 
-                db_date_col: Optional[str] = None,
-                custom_path=None):
+def update(
+        raw_df: pd.DataFrame,
+        database: str,
+        table: str,
+        yaml_file_name: str = 'cfg.yaml',
+        clause: Optional[str] = None,
+        date_col: Optional[str] = None,
+        custom_path: Optional[str] = None
+    ):
+    """更新数据库表中的数据"""
     try:
         df = raw_df.copy()
+        if df.empty:
+            raise ValueError("导入的数据集为空。")
+
         cfg = load_db_config(yaml_file_name, database, custom_path)
         engine = connect_to_db(cfg)
-        
-        if df.shape[0] == 0:
-            raise ValueError("Imported dataset is empty.")
-        
         clean_dataframe(df)
 
-        chunk_size = 1000  # 每次上传的数据量
-        num_chunks = (len(df) - 1) // chunk_size + 1
-
-        if add_data:
-            for i in tqdm(range(num_chunks), desc="Adding Data"):
-                start_idx = i * chunk_size
-                end_idx = start_idx + chunk_size
-                df.iloc[start_idx:end_idx].to_sql(table, engine, if_exists='append', index=False)
-            print_action_result(table, "added", df, df_date_col)
-        else:
-            start_date= min(df[df_date_col])
-            end_date = max(df[df_date_col])
-            df.iloc[0:1].to_sql(table, engine, if_exists='append', index=False)
-            delete_sql = f"DELETE FROM {table} WHERE {db_date_col} BETWEEN '{start_date}' AND '{end_date}'"
+        if clause or date_col:
+            # 删除满足条件的数据
+            conditions = []
+            if clause:
+                conditions.append(clause)
+            if date_col:
+                start_date, end_date = df[date_col].min(), df[date_col].max()
+                conditions.append(f"{date_col} BETWEEN '{start_date}' AND '{end_date}'")
+            delete_sql = f"DELETE FROM {table} WHERE {' AND '.join(conditions)}"
             execute_sql(engine, delete_sql)
-            for i in tqdm(range(num_chunks), desc="Updating Data"):
-                start_idx = i * chunk_size
-                end_idx = start_idx + chunk_size
-                df.iloc[start_idx:end_idx].to_sql(table, engine, if_exists='append', index=False)
-            print_action_result(table, "updated", df, df_date_col)
-    except Exception as e:
-        raise ValueError(f"{e}")
 
-def print_action_result(table, action, df, df_date_col):
+        # 使用chunksize参数上传数据
+        df.to_sql(table, engine, if_exists='append', index=False, chunksize=1000, method='multi')
+        print_action_result(table, "更新", df, date_col)
+
+    except Exception as e:
+        raise ValueError(f"更新过程发生错误：{e}")
+
+def print_action_result(table: str, action: str, df: pd.DataFrame, df_date_col: Optional[str] = None):
+    """打印操作结果"""
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
     if df_date_col:
-        date_range = f"{df[df_date_col].min()} to {df[df_date_col].max()}"
-        print(f"{table} data has been {action}: {current_time}\nData date range: {date_range}")
+        date_range = f"{df[df_date_col].min()} 至 {df[df_date_col].max()}"
+        print(f"{table} 数据已{action}：{current_time}\n数据日期范围：{date_range}")
     else:
-        print(f"{table} data has been {action}: {current_time}")
+        print(f"{table} 数据已{action}：{current_time}")
 
-def clear_db(yaml_file_name, database, table, custom_path=None):
+def clear_db(yaml_file_name: str, database: str, table: str, custom_path: Optional[str] = None):
+    """清空数据库表"""
     cfg = load_db_config(yaml_file_name, database, custom_path)
     engine = connect_to_db(cfg)
     delete_sql = f"DELETE FROM {table}"
     execute_sql(engine, delete_sql)
+    print(f"{table} 表已清空。")
 
-def fetch_table_data(yaml_file_name, database, table, date_col=None, start_date=None, end_date=None, custom_path=None):
+def fetch_table_data(
+        yaml_file_name: str,
+        database: str,
+        table: str,
+        date_col: Optional[str] = None,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        custom_path: Optional[str] = None
+    ) -> pd.DataFrame:
+    """从数据库中获取数据"""
     cfg = load_db_config(yaml_file_name, database, custom_path)
     engine = connect_to_db(cfg)
-    if date_col:
+    if date_col and start_date and end_date:
         sql = f"SELECT * FROM {table} WHERE {date_col} BETWEEN '{start_date}' AND '{end_date}'"
     else:
-        sql = f"SELECT * FROM {table} "
-    df = pd.read_sql(sql, engine)
-    return df
+        sql = f"SELECT * FROM {table}"
+    try:
+        df = pd.read_sql(sql, engine)
+        return df
+    except Exception as e:
+        raise ValueError(f"获取数据时发生错误：{e}")
 
-def sql_query(yaml_file_name, database, sql, custom_path=None):
+def sql_query(
+        database: str,
+        sql: str,
+        yaml_file_name: str='cfg.yaml',
+        custom_path: Optional[str] = None
+    ) -> Optional[pd.DataFrame]:
+    """执行SQL查询"""
     cfg = load_db_config(yaml_file_name, database, custom_path)
     engine = connect_to_db(cfg)
-    if sql.strip().upper().startswith("SELECT"):
-        # 若为查询语句，执行查询操作并返回DataFrame
-        try:
+    try:
+        if sql.strip().upper().startswith("SELECT"):
             df = pd.read_sql(sql, engine)
             return df
-        except ResourceClosedError:
-            print('查询完成，但没有返回任何数据。')
-    else:
-        # 执行非查询操作
-        execute_sql(engine, sql)
-        print('操作完成。')
-            
+        else:
+            execute_sql(engine, sql)
+            print('操作完成。')
+    except ResourceClosedError:
+        print('查询完成，但没有返回任何数据。')
+    except Exception as e:
+        raise ValueError(f"执行SQL查询时发生错误：{e}")
