@@ -4,9 +4,6 @@
 
 `datarecipe` is an open-source package designed for data practitioners. It aims to provide comprehensive, robust, and user-friendly data tools.
 
-## Dependencies
-
-- `sqlalchemy`: ==1.4.16
 
 ## Functions
 
