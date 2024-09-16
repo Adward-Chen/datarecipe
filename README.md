@@ -151,4 +151,4 @@ result_df = sql_query("test_db", "SELECT * FROM users")
 ## Contact Information
 For any questions or suggestions regarding the toolkit, please contact us at:
 - Email: HanfanC@outlook.com
-- GitHub: [DataRecipe GitHub Repository](https://github.com/DataRecipe)
+- PyPI: [PyPI Project](https://pypi.org/project/datarecipe/)
