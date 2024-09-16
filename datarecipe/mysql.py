@@ -96,36 +96,6 @@ def print_action_result(table: str, action: str, df: pd.DataFrame, df_date_col: 
     else:
         print(f"{table} 数据已{action}：{current_time}")
 
-def clear_db(yaml_file_name: str, database: str, table: str, custom_path: Optional[str] = None):
-    """清空数据库表"""
-    cfg = load_db_config(yaml_file_name, database, custom_path)
-    engine = connect_to_db(cfg)
-    delete_sql = f"DELETE FROM {table}"
-    execute_sql(engine, delete_sql)
-    print(f"{table} 表已清空。")
-
-def fetch_table_data(
-        yaml_file_name: str,
-        database: str,
-        table: str,
-        date_col: Optional[str] = None,
-        start_date: Optional[str] = None,
-        end_date: Optional[str] = None,
-        custom_path: Optional[str] = None
-    ) -> pd.DataFrame:
-    """从数据库中获取数据"""
-    cfg = load_db_config(yaml_file_name, database, custom_path)
-    engine = connect_to_db(cfg)
-    if date_col and start_date and end_date:
-        sql = f"SELECT * FROM {table} WHERE {date_col} BETWEEN '{start_date}' AND '{end_date}'"
-    else:
-        sql = f"SELECT * FROM {table}"
-    try:
-        df = pd.read_sql(sql, engine)
-        return df
-    except Exception as e:
-        raise ValueError(f"获取数据时发生错误：{e}")
-
 def sql_query(
         database: str,
         sql: str,
