@@ -6,8 +6,9 @@ pandas==2.2.2
 protobuf==4.21.12
 PyMySQL==1.1.0
 pytz==2024.2
-pywin32==305.1
 PyYAML==6.0.2
 SQLAlchemy==2.0.34
 tqdm==4.66.1
 tzdata==2024.1
+openpyxl==3.1.5
+chardet==5.2.0
