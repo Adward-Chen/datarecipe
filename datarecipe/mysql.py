@@ -2,7 +2,6 @@ import os
 import yaml
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 from datetime import datetime
 from typing import Optional
 from sqlalchemy import create_engine, text
@@ -59,33 +58,50 @@ def update(
         date_col: Optional[str] = None,
         custom_path: Optional[str] = None
     ):
-    """更新数据库表中的数据"""
     try:
         df = raw_df.copy()
         if df.empty:
             raise ValueError("导入的数据集为空。")
-
-        cfg = load_db_config(yaml_file_name, database, custom_path)
-        engine = connect_to_db(cfg)
+        
+        # 清理数据
         clean_dataframe(df)
-
-        if clause or date_col:
-            # 删除满足条件的数据
-            conditions = []
+        
+        # 加载数据库配置
+        cfg = load_db_config(yaml_file_name, database, custom_path)
+        
+        # 连接数据库
+        engine = connect_to_db(cfg)
+        
+        # 测试写入一行数据
+        test_df = df.iloc[[0]].copy()
+        try:
+            test_df.to_sql(table, engine, if_exists='append', index=False)
+        except Exception as e:
+            raise ValueError(f"测试写入数据失败，请检查数据格式：{str(e)}")
+        
+        # 如果指定了日期列，添加日期条件
+        if date_col and date_col in df.columns:
+            min_date = df[date_col].min()
+            max_date = df[date_col].max()
+            print(f"更新的数据日期范围：{min_date} ~ {max_date}")
             if clause:
-                conditions.append(clause)
-            if date_col:
-                start_date, end_date = df[date_col].min(), df[date_col].max()
-                conditions.append(f"{date_col} BETWEEN '{start_date}' AND '{end_date}'")
-            delete_sql = f"DELETE FROM {table} WHERE {' AND '.join(conditions)}"
+                clause = f"{clause} AND {date_col} >= '{min_date}' AND {date_col} <= '{max_date}'"
+            else:
+                clause = f"{date_col} >= '{min_date}' AND {date_col} <= '{max_date}'"
+        
+        # 如果有条件子句，先删除符合条件的数据
+        if clause:
+            delete_sql = f"DELETE FROM {table} WHERE {clause}"
             execute_sql(engine, delete_sql)
-
-        # 使用chunksize参数上传数据
-        df.to_sql(table, engine, if_exists='append', index=False, chunksize=1000, method='multi')
-        print_action_result(table, "更新", df, date_col)
-
+        
+        # 将数据写入数据库
+        df.to_sql(table, engine, if_exists='append', index=False)
+        
+        print(f"成功更新 {len(df)} 条记录到 {database}.{table}")
+        
     except Exception as e:
-        raise ValueError(f"更新过程发生错误：{e}")
+        raise Exception(f"更新数据时发生错误：{str(e)}")
+
 
 def print_action_result(table: str, action: str, df: pd.DataFrame, df_date_col: Optional[str] = None):
     """打印操作结果"""

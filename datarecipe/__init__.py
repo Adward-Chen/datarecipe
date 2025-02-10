@@ -17,3 +17,7 @@ from .mysql import(
 from .examine import(
     check_empty
 )
+
+from .s3_api import(
+    fetch_sp_api_reports
+)
