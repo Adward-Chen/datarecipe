@@ -16,6 +16,8 @@
    - [Database Operations](#database-operations)
      - [update](#update)
      - [sql_query](#sql_query)
+   - [API](#api)
+     - [fetch_sp_api_reports](#fetch_sp_api_reports)
 3. [Contact Information](#contact-information)
 
 ## Overview
@@ -146,6 +148,42 @@ Executes a SELECT SQL query and returns a DataFrame.
 **Example:**
 ```python
 result_df = sql_query("test_db", "SELECT * FROM users")
+```
+
+### API
+#### fetch_sp_api_reports
+Fetches reports from Amazon Selling Partner API with concurrent processing support.
+- **Parameters**:
+  - `report_requests`: List or dictionary containing report request information.
+  - `max_wait_seconds`: Maximum wait time in seconds (default: 300)
+  - `max_workers`: Maximum number of concurrent worker threads (default: 3)
+- **Returns**: Tuple containing:
+  - `results`: Dictionary with report names as keys and report data/status as values
+  - `all_success`: Boolean indicating if all reports were fetched successfully
+
+**Example:**
+```python
+report_requests = [
+    {
+        "name": "daily_sales",
+        "body": {
+            "reportType": "GET_VENDOR_SALES_REPORT",
+            "reportOptions": {
+            "distributorView": "MANUFACTURING",
+            "reportPeriod": "DAY",
+            "sellingProgram": "RETAIL"
+            },
+            "dataStartTime": '2025-01-01',
+            "dataEndTime": '2025-01-02',
+            "marketplaceIds": [
+            "ATVPDKIKX0DER"
+            ]
+        }
+    }
+]
+
+# 获取报告数据
+results, all_success = fetch_sp_api_reports(report_requests)
 ```
 
 ## Contact Information
