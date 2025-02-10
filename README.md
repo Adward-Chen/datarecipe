@@ -173,11 +173,22 @@ report_requests = [
             "reportPeriod": "DAY",
             "sellingProgram": "RETAIL"
             },
-            "dataStartTime": '2025-01-01',
-            "dataEndTime": '2025-01-02',
+            "dataStartTime": start_time,
+            "dataEndTime": end_time,
             "marketplaceIds": [
             "ATVPDKIKX0DER"
             ]
+        }
+    },
+    {
+        "name": "promotion",
+        "body": {
+            "reportType": 'GET_PROMOTION_PERFORMANCE_REPORT',
+            "reportOptions": {
+                "promotionStartDateFrom": start_time,
+                "promotionStartDateTo": end_time
+            },
+            "marketplaceIds": ["ATVPDKIKX0DER"]
         }
     }
 ]
