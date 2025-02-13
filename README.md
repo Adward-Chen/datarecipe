@@ -1,6 +1,10 @@
 
 # DataRecipe
 
+### Requirements
+- Python 3.9 or higher
+- requirements.txt
+
 ## Table of Contents
 1. [Overview](#overview)
 2. [Functions](#functions)
